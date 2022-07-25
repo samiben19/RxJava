@@ -15,5 +15,6 @@ public interface IRepoProduct {
     Observable<Product> getByName(String name);
     Maybe<Product> getByLocation(long locationID, long position);
     Maybe<Product> getAvailableProduct(String name, long quantity);
+    Completable reserve(String name, long quantity);
     Single<List<Product>> getAll();
 }

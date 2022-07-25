@@ -56,18 +56,6 @@ public class ProductService {
     }
 
     public Completable reserveProduct(String name, long quantity){
-        Maybe<Product> productMaybe = repoProduct.getAvailableProduct(name, quantity);
-
-        productMaybe
-                .doOnEvent((value, error)-> {
-                    if (value == null && error == null) {
-                        log.warn("Cannot reserve ! There are no items available !");
-                    }})
-                .subscribe(product -> repoProduct.update(product.getLocationID(), product.getPosition(), new Product(product.getName(), product.getBbd(), product.getLocationID(), product.getPosition(), product.getQuantity(), Product.Status.RESERVED))
-                        .observeOn(Schedulers.io())
-                        .doOnComplete(() -> log.info(productMaybe.blockingGet() + " reserved !"))
-                        .subscribe());
-
-        return Completable.complete();
+        return repoProduct.reserve(name, quantity);
     }
 }

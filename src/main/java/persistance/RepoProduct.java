@@ -2,6 +2,7 @@ package persistance;
 
 import io.reactivex.*;
 import io.reactivex.Observable;
+import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import model.Product;
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,10 @@ public class RepoProduct implements IRepoProduct{
         this.repo = new ArrayList<>();
         this.fileName = fileName;
         loadData();
+
+        log.info("Loaded RepoProduct with: ");
+        repo.forEach(product -> log.info(String.valueOf(product)));
+        log.info("-----------------------");
     }
 
     private String createProductAsString(Product product){
@@ -100,8 +105,8 @@ public class RepoProduct implements IRepoProduct{
 
         if(repo.stream().anyMatch(product1 -> product1.getPosition() == product.getPosition()
                 && product1.getLocationID() == product.getLocationID()))
-            return Completable.error(new Exception("There is already a product on location " +
-                    product.getLocationID() + ", at position " + product.getPosition()));
+            return Completable.error(new Exception("There is already a product at location " +
+                    product.getLocationID() + ", position " + product.getPosition()));
 
         repo.add(product);
         appendToFile(product);
@@ -138,7 +143,7 @@ public class RepoProduct implements IRepoProduct{
     public Observable<Product> getByName(String name) {
         return Observable.fromIterable(
                 repo.stream()
-                        .filter(product -> product.getName().equals(name))
+                        .filter(product -> product.getName().equalsIgnoreCase(name))
                         .collect(Collectors.toList())
         );
     }
@@ -163,6 +168,23 @@ public class RepoProduct implements IRepoProduct{
 
         return searchedProduct.map(Maybe::just)
                 .orElseGet(Maybe::empty);
+    }
+
+    @Override
+    public Completable reserve(String name, long quantity) {
+        Maybe<Product> productMaybe = this.getAvailableProduct(name, quantity);
+
+        productMaybe
+                .doOnEvent((value, error)-> {
+                    if (value == null && error == null) {
+                        log.warn("Cannot reserve ! There are no items available !");
+                    }})
+                .subscribe(product -> this.update(product.getLocationID(), product.getPosition(), new Product(product.getName(), product.getBbd(), product.getLocationID(), product.getPosition(), product.getQuantity(), Product.Status.RESERVED))
+                        .observeOn(Schedulers.io())
+                        .doOnComplete(() -> log.info(productMaybe.blockingGet() + " reserved !"))
+                        .subscribe());
+
+        return Completable.complete();
     }
 
     @Override

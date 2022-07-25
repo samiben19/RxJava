@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import model.Product;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import persistance.IRepoProduct;
 import persistance.RepoProduct;
 import service.ProductService;
@@ -15,15 +17,20 @@ import service.ProductService;
 import java.time.LocalDate;
 import java.util.List;
 @Slf4j
+@ComponentScan("service")
 @SpringBootApplication
 public class MyProjectApplication {
+    @Bean(name = "fileName")
+    public static String createProps(){
+        return "src/main/resources/products.csv";
+    }
 
     public static void main(String[] args) {
         SpringApplication.run(MyProjectApplication.class, args);
 
-        ProductService productService = new ProductService(new RepoProduct("src/main/resources/products.csv"));
-
-        productService.reserveProduct("Product2", 1).subscribe();
+//        ProductService productService = new ProductService(new RepoProduct("src/main/resources/products.csv"));
+//
+//        productService.reserveProduct("Product2", 1).subscribe();
 
 //        productService.getProductByLocation(1, 5)
 //                .subscribe(product -> System.out.println(product));
