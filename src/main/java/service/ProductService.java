@@ -3,7 +3,6 @@ package service;
 import io.reactivex.*;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 import model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,7 @@ import persistance.IRepoProduct;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Service
@@ -27,6 +27,7 @@ public class ProductService {
     public Completable addProduct(String name, LocalDate bbd, long locationID, long position, long quantity){
         Product product = new Product(name, bbd, locationID, position, quantity, Product.Status.AVAILABLE);
 
+        AtomicReference<Throwable> t = new AtomicReference<>(null);
         repoProduct.save(product).subscribe(new CompletableObserver() {
             @Override
             public void onSubscribe(@NonNull Disposable d) {
@@ -40,10 +41,13 @@ public class ProductService {
 
             @Override
             public void onError(@NonNull Throwable e) {
+                t.set(e);
                 log.error(e.getMessage());
             }
         });
 
+        if(t.get() != null)
+            return Completable.error(t.get());
         return Completable.complete();
     }
 

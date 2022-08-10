@@ -173,17 +173,21 @@ public class RepoProduct implements IRepoProduct{
     @Override
     public Completable reserve(String name, long quantity) {
         Maybe<Product> productMaybe = this.getAvailableProduct(name, quantity);
+        AtomicReference<String> errorString = new AtomicReference<>(null);
 
         productMaybe
                 .doOnEvent((value, error)-> {
                     if (value == null && error == null) {
-                        log.warn("Cannot reserve ! There are no items available !");
+                        errorString.set("Cannot reserve ! There are no items available !");
+                        log.warn(errorString.get());
                     }})
                 .subscribe(product -> this.update(product.getLocationID(), product.getPosition(), new Product(product.getName(), product.getBbd(), product.getLocationID(), product.getPosition(), product.getQuantity(), Product.Status.RESERVED))
                         .observeOn(Schedulers.io())
                         .doOnComplete(() -> log.info(productMaybe.blockingGet() + " reserved !"))
                         .subscribe());
 
+        if(errorString.get() != null)
+            return Completable.error(new Throwable(errorString.get()));
         return Completable.complete();
     }
 

@@ -22,7 +22,7 @@ import java.util.List;
 @RequestMapping("/rxjava/products")
 public class Controller {
 
-    private IRepoProduct repoProduct;
+    private final IRepoProduct repoProduct;
 
     @Autowired
     public Controller(@Qualifier("repoFileProduct") IRepoProduct repoProduct) { this.repoProduct = repoProduct; }
